@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chiquitai - StreamElements Overlay</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Username element -->
+   <div id="username" class="overlay-element">
+        <div id="username-text">chiquitai</div>
+    </div>
+
+    <!-- Latest events -->
+    <div id="latest-events" class="overlay-element">
+        
+        <div class="event-entry" id="latest-sub-container">
+            <div class="event-type">Posledný sub</div>
+            <div class="event-value" id="latest-sub-value">--</div>
+        </div>
+        
+        <div class="event-entry" id="latest-tip-container">
+            <div class="event-type">Posledný donate</div>
+            <div class="event-value">
+                <span id="latest-tip-name">--</span> • 
+                <span class="dollar">€</span><span id="latest-tip-amount">0</span>
+            </div>
+        </div>
+        
+        <div class="event-entry" id="top-donator-container">
+            <div class="event-type">Top donátor (mesiac)</div>
+            <div class="event-value">
+                <span id="top-donator-name">--</span> • 
+                <span class="dollar">€</span><span id="top-donator-amount">0</span>
+            </div>
+        </div>
+        
+        <div class="event-entry" id="latest-cheer-container">
+            <div class="event-type">Posledné bitíky</div>
+            <div class="event-value">
+                <span id="latest-cheer-name">--</span> • 
+                <span id="latest-cheer-amount">0</span> bitov
+            </div>
+        </div>
+        
+        <div class="event-entry" id="top-weekly-donator-container">
+            <div class="event-type">Top donátor (týždeň)</div>
+            <div class="event-value">
+                <span id="top-weekly-donator-name">--</span> • 
+                <span class="dollar">€</span><span id="top-weekly-donator-amount">0</span>
+            </div>
+        </div>
+
+        <div class="event-entry" id="top-stream-donator-container">
+            <div class="event-type">Top donátor (stream)</div>
+            <div class="event-value">
+                <span id="top-stream-donator-name">--</span> • 
+                <span class="dollar">€</span><span id="top-stream-donator-amount">0</span>
+            </div>
+        </div>
+        
+        <div class="event-entry" id="top-alltime-donator-container">
+            <div class="event-type">Top donátor (všetky časy)</div>
+            <div class="event-value">
+                <span id="top-alltime-donator-name">--</span> • 
+                <span class="dollar">€</span><span id="top-alltime-donator-amount">0</span>
+            </div>
+        </div>
+
+        <!-- Carousel navigation dots -->
+        <div class="carousel-nav" id="carousel-nav"></div>
+    </div>
+
+    <!-- Goals -->
+    <div id="goals" class="overlay-element">
+        <div class="goal-title" id="unified-goal-title">New Streaming Setup</div>
+        
+        <div class="goal-container">
+            <div class="goal-label">
+                <span>Sub Goal</span>
+                <span class="goal-amount"><span id="current-subs">0</span>/<span id="sub-goal">100</span></span>
+            </div>
+            <div class="goal-bar">
+                <div class="goal-progress" id="sub-goal-progress" style="width: 0%;"></div>
+            </div>
+        </div>
+        
+        <div class="goal-container">
+            <div class="goal-label">
+                <span>Donation Goal</span>
+                <span class="goal-amount"><span class="dollar">€</span><span id="current-donations">0</span>/<span class="dollar">€</span><span id="donation-goal">500</span></span>
+            </div>
+            <div class="goal-bar">
+                <div class="goal-progress" id="donation-goal-progress" style="width: 0%;"></div>
+            </div>
+        </div>
+        
+        <div class="goal-container">
+            <div class="goal-label">
+                <span>Follower Goal</span>
+                <span class="goal-amount"><span id="current-followers">0</span>/<span id="follower-goal">10000</span></span>
+            </div>
+            <div class="goal-bar">
+                <div class="goal-progress" id="follower-goal-progress" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera frame -->
+    <div id="camera-frame" class="overlay-element">
+        <!-- Camera content will go here -->
+    </div> 
+
+    <script src="script.js"></script>
+</body>
+</html>

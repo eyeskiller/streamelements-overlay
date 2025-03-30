@@ -1,0 +1,142 @@
+{
+    "channelName": {
+      "type": "text",
+      "label": "Channel Name",
+      "value": "chiquitai",
+      "group": "General Settings"
+    },
+    "carouselInterval": {
+      "type": "number",
+      "label": "Carousel Rotation Interval (seconds)",
+      "value": 5,
+      "min": 3,
+      "max": 30,
+      "group": "Carousel Settings"
+    },
+    "unifiedGoalTitle": {
+      "type": "text",
+      "label": "Goal Title",
+      "value": "New Streaming Setup",
+      "group": "Goal Settings"
+    },
+    "subGoal": {
+      "type": "number",
+      "label": "Subscriber Goal",
+      "value": 750,
+      "min": 1,
+      "group": "Goal Settings"
+    },
+    "donationGoal": {
+      "type": "number",
+      "label": "Donation Goal (€)",
+      "value": 2500,
+      "min": 1,
+      "group": "Goal Settings"
+    },
+    "followerGoal": {
+      "type": "number",
+      "label": "Follower Goal",
+      "value": 5000,
+      "min": 1,
+      "group": "Goal Settings"
+    },
+    "showUsername": {
+      "type": "checkbox",
+      "label": "Show Username Element",
+      "value": true,
+      "group": "Display Options"
+    },
+    "showLatestEvents": {
+      "type": "checkbox",
+      "label": "Show Latest Events Panel",
+      "value": true,
+      "group": "Display Options"
+    },
+    "showGoals": {
+      "type": "checkbox",
+      "label": "Show Goals Panel",
+      "value": true,
+      "group": "Display Options"
+    },
+    "showCameraFrame": {
+      "type": "checkbox",
+      "label": "Show Camera Frame",
+      "value": true,
+      "group": "Display Options"
+    },
+    "showLatestSub": {
+      "type": "checkbox",
+      "label": "Show Latest Subscriber",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "showLatestTip": {
+      "type": "checkbox",
+      "label": "Show Latest Donation",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "showTopWeeklyDonator": {
+      "type": "checkbox",
+      "label": "Show Top Weekly Donator",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "showTopStreamDonator": {
+      "type": "checkbox",
+      "label": "Show Top Stream Donator",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "showTopAllTimeDonator": {
+      "type": "checkbox",
+      "label": "Show All-Time Top Donator",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "showTopDonator": {
+      "type": "checkbox",
+      "label": "Show Top Monthly Donator",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "showLatestCheer": {
+      "type": "checkbox",
+      "label": "Show Latest Cheer",
+      "value": true,
+      "group": "Event Display Options"
+    },
+    "mainPurple": {
+      "type": "colorpicker",
+      "label": "Main Purple Color",
+      "value": "#8a2be2",
+      "group": "Color Settings"
+    },
+    "darkerPurple": {
+      "type": "colorpicker",
+      "label": "Darker Purple Color",
+      "value": "#4b0082",
+      "group": "Color Settings"
+    },
+    "lighterPurple": {
+      "type": "colorpicker",
+      "label": "Lighter Purple Color",
+      "value": "#bf94e4",
+      "group": "Color Settings"
+    },
+    "neonPurple": {
+      "type": "colorpicker",
+      "label": "Neon Purple Color",
+      "value": "#cf9fff",
+      "group": "Color Settings"
+    },
+    "darkBgOpacity": {
+      "type": "slider",
+      "label": "Background Opacity",
+      "value": 0.7,
+      "min": 0.1,
+      "max": 1,
+      "step": 0.1,
+      "group": "Color Settings"
+    }
+  }

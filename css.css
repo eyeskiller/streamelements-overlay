@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        
+:root {
+    --main-purple: #8a2be2;
+    --darker-purple: #4b0082;
+    --lighter-purple: #bf94e4;
+    --neon-purple: #cf9fff;
+    --dark-bg: rgba(26, 0, 51, 0.7);
+    --text-light: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: transparent;
+    color: var(--text-light);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Shared styles for all elements */
+.overlay-element {
+    background-color: var(--dark-bg);
+    backdrop-filter: blur(5px);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 10px 15px;
+    position: absolute;
+    overflow: hidden;
+}
+
+.overlay-element::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, var(--main-purple), var(--neon-purple));
+}
+
+/* Username element */
+#username {
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+}
+
+#username-text {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--lighter-purple);
+}
+
+/* Latest events - MOVED TO TOP */
+#latest-events {
+    top: 20px; /* Changed from bottom to top */
+    left: 20px;
+    width: 280px;
+}
+
+.event-entry {
+    margin-bottom: 10px;
+    position: relative;
+    opacity: 0;
+    display: none;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.event-entry.active {
+    opacity: 1;
+    display: block;
+}
+
+.event-type {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--lighter-purple);
+    margin-bottom: 2px;
+}
+
+.event-value {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Goals element - MOVED TO TOP */
+#goals {
+    top: 20px; /* Changed from bottom to top */
+    right: 20px;
+    width: 280px;
+}
+
+.goal-container {
+    margin-bottom: 15px;
+}
+
+.goal-container:last-child {
+    margin-bottom: 0;
+}
+
+.goal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--neon-purple);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.goal-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--lighter-purple);
+    margin-bottom: 2px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.goal-amount {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.goal-bar {
+    height: 6px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.goal-progress {
+    height: 100%;
+    background: linear-gradient(to right, var(--main-purple), var(--neon-purple));
+    transition: width 0.5s ease-out;
+}
+
+/* Camera frame - MOVED TO BOTTOM */
+#camera-frame {
+    bottom: 20px; /* Changed from top to bottom */
+    right: 20px;
+    width: 320px;
+    height: 180px;
+    padding: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--main-purple);
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes highlight {
+    0% { background-color: var(--dark-bg); }
+    50% { background-color: rgba(138, 43, 226, 0.4); }
+    100% { background-color: var(--dark-bg); }
+}
+
+.new-event {
+    animation: highlight 2s ease;
+}
+
+.carousel-transition {
+    animation: fadeInOut 10s ease;
+}
+
+/* Dollar sign styling */
+.dollar {
+    color: #85bb65;
+    font-weight: 700;
+}
+
+/* Additional event types */
+#top-donator-container, 
+#latest-cheer-container,
+#latest-sub-container,
+#latest-tip-container,
+#latest-raid-container,
+#top-weekly-donator-container,
+#top-stream-donator-container,
+#top-alltime-donator-container {
+    margin-top: 10px;
+}
+
+/* Carousel nav dots */
+.carousel-nav {
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 0;
+}
+
+.nav-dot {
+    width: 5px;
+    height: 5px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+}
+
+.nav-dot.active {
+    background-color: var(--lighter-purple);
+}
