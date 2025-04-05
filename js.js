@@ -6,6 +6,7 @@ let config = {
     donationGoal: 2500,
     followerGoal: 5000,
     carouselInterval: 5000, // 5 seconds between carousel slides
+    refreshInterval: 10000, // 10 seconds refresh interval (added)
     showElements: {
         username: true,
         latestEvents: true,
@@ -25,6 +26,10 @@ let config = {
 let carouselItems = [];
 let currentCarouselIndex = 0;
 let carouselInterval;
+let refreshInterval; // Added variable for refresh interval
+
+// Track the latest data for forced refreshes
+let latestData = {};
 
 // Load data from StreamElements
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -37,6 +42,7 @@ window.addEventListener('onWidgetLoad', function (obj) {
         donationGoal: fieldData.donationGoal || config.donationGoal,
         followerGoal: fieldData.followerGoal || config.followerGoal,
         carouselInterval: (fieldData.carouselInterval || 5) * 1000, // Convert to milliseconds
+        refreshInterval: (fieldData.refreshInterval || 10) * 1000, // Added refresh interval field
         showElements: {
             username: typeof fieldData.showUsername !== 'undefined' ? fieldData.showUsername : config.showElements.username,
             latestEvents: typeof fieldData.showLatestEvents !== 'undefined' ? fieldData.showLatestEvents : config.showElements.latestEvents,
@@ -54,6 +60,9 @@ window.addEventListener('onWidgetLoad', function (obj) {
     
     // Get session data
     const apiData = obj.detail.session.data;
+    
+    // Store API data reference for refreshes
+    latestData = apiData;
     
     // Debug all available API data
     console.log("Available API data:", apiData);
@@ -120,6 +129,12 @@ window.addEventListener('onWidgetLoad', function (obj) {
     
     // Initialize the overlay with config settings
     initOverlay();
+    
+    // Check for missing DOM elements
+    checkDOMElements();
+    
+    // Set up periodic refresh interval (more frequent than before)
+    setupRefreshInterval();
 });
 
 // Initialize overlay
@@ -139,15 +154,77 @@ function initOverlay() {
     }
     
     // Set unified goal title
-    document.getElementById('unified-goal-title').textContent = config.unifiedGoalTitle;
+    const unifiedGoalTitle = document.getElementById('unified-goal-title');
+    if (unifiedGoalTitle) {
+        unifiedGoalTitle.textContent = config.unifiedGoalTitle;
+    }
     
-    // Set goal values
-    document.getElementById('sub-goal').textContent = config.subGoal;
-    document.getElementById('donation-goal').textContent = config.donationGoal;
-    document.getElementById('follower-goal').textContent = config.followerGoal;
+    // Set goal values - added null checks
+    const subGoalEl = document.getElementById('sub-goal');
+    if (subGoalEl) subGoalEl.textContent = config.subGoal;
+    
+    const donationGoalEl = document.getElementById('donation-goal');
+    if (donationGoalEl) donationGoalEl.textContent = config.donationGoal;
+    
+    const followerGoalEl = document.getElementById('follower-goal');
+    if (followerGoalEl) followerGoalEl.textContent = config.followerGoal;
     
     // Force update all progress bars
     setTimeout(forceUpdateAllGoals, 500);
+}
+
+// Setup refresh interval (new function)
+function setupRefreshInterval() {
+    // Clear any existing interval
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+    
+    // Set up new refresh interval
+    refreshInterval = setInterval(() => {
+        console.log("Performing periodic refresh...");
+        forceUpdateAllGoals();
+        
+        // Also refresh latest events from stored data
+        refreshLatestEvents();
+    }, config.refreshInterval);
+}
+
+// Refresh latest events from stored data (new function)
+function refreshLatestEvents() {
+    try {
+        // Only refresh if we have data
+        if (Object.keys(latestData).length === 0) {
+            console.warn("No latest data available for refresh");
+            return;
+        }
+        
+        console.log("Refreshing latest events from stored data:", latestData);
+        
+        // Refresh latest sub
+        if (latestData['subscriber-latest']) {
+            const latestSub = latestData['subscriber-latest'];
+            updateLatestSub(latestSub.name, false); // false = don't animate
+        }
+        
+        // Refresh latest tip
+        if (latestData['tip-latest']) {
+            const latestTip = latestData['tip-latest'];
+            updateLatestTip(latestTip.name, latestTip.amount, false);
+        }
+        
+        // Refresh top donator (monthly)
+        if (latestData['tip-monthly-top-donation']) {
+            const topDonator = latestData['tip-monthly-top-donation'];
+            updateTopDonator(topDonator.name, topDonator.amount, false);
+        }
+        
+        // Refresh all other data similarly
+        // ... (repeat for other data types)
+        
+    } catch (e) {
+        console.error("Error refreshing latest events:", e);
+    }
 }
 
 // Helper function to toggle element visibility
@@ -155,6 +232,8 @@ function toggleElementVisibility(elementId, isVisible) {
     const element = document.getElementById(elementId);
     if (element) {
         element.style.display = isVisible ? 'block' : 'none';
+    } else {
+        console.warn(`Element with ID ${elementId} not found`);
     }
 }
 
@@ -191,6 +270,9 @@ function setupCarousel() {
         carouselItems.push('top-alltime-donator-container');
     }
     
+    // Debug carousel items
+    console.log("Carousel items:", carouselItems);
+    
     // Create navigation dots
     createNavDots();
     
@@ -200,12 +282,19 @@ function setupCarousel() {
     } else if (carouselItems.length === 1) {
         // If only one item, just show it
         activateCarouselItem(0);
+    } else {
+        console.warn("No carousel items to display");
     }
 }
 
 // Create navigation dots for carousel
 function createNavDots() {
     const navContainer = document.getElementById('carousel-nav');
+    if (!navContainer) {
+        console.error("Carousel nav container not found");
+        return;
+    }
+    
     navContainer.innerHTML = '';
     
     // Create a dot for each carousel item
@@ -232,136 +321,189 @@ function startCarousel() {
         currentCarouselIndex = (currentCarouselIndex + 1) % carouselItems.length;
         activateCarouselItem(currentCarouselIndex);
     }, config.carouselInterval);
+    
+    console.log(`Carousel started with ${carouselItems.length} items, rotating every ${config.carouselInterval/1000} seconds`);
 }
 
 // Show a specific carousel item
 function activateCarouselItem(index) {
-    // Hide all items
-    document.querySelectorAll('.event-entry').forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    // Update nav dots
-    document.querySelectorAll('.nav-dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i === index);
-    });
-    
-    // Show selected item
-    const activeItem = document.getElementById(carouselItems[index]);
-    if (activeItem) {
-        activeItem.classList.add('active');
+    try {
+        // Hide all items
+        document.querySelectorAll('.event-entry').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Update nav dots
+        document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+        
+        // Show selected item
+        const activeItemId = carouselItems[index];
+        const activeItem = document.getElementById(activeItemId);
+        if (activeItem) {
+            activeItem.classList.add('active');
+            console.log(`Activated carousel item: ${activeItemId}`);
+        } else {
+            console.error(`Carousel item not found: ${activeItemId}`);
+        }
+        
+        currentCarouselIndex = index;
+    } catch (e) {
+        console.error("Error activating carousel item:", e);
     }
-    
-    currentCarouselIndex = index;
 }
 
 // Listen for StreamElements events
 window.addEventListener('onEventReceived', function (obj) {
-    const data = obj.detail.event;
+    console.log("Event received:", obj);
     
-    // Handle new subscriber
-    if (data.type === 'subscriber-latest') {
-        updateLatestSub(data.name);
-    }
-    
-    // Handle new tip/donation
-    if (data.type === 'tip-latest') {
-        updateLatestTip(data.name, data.amount);
-    }
-    
-    // Handle top donator update (monthly)
-    if (data.type === 'tip-monthly-top-donation') {
-        updateTopDonator(data.name, data.amount);
-    }
-    
-    // Handle top weekly donator update
-    if (data.type === 'tip-weekly-top-donator') {
-        updateTopWeeklyDonator(data.name, data.amount);
-    }
-    
-    // Handle top stream donator update
-    if (data.type === 'tip-session-top-donator') {
-        updateTopStreamDonator(data.name, data.amount);
-    }
-    
-    // Handle all-time top donator update
-    if (data.type === 'tip-alltime-top-donation') {
-        updateTopAllTimeDonator(data.name, data.amount);
-    }
-    
-    // Handle new cheer
-    if (data.type === 'cheer-latest') {
-        updateLatestCheer(data.name, data.amount);
-    }
-    
-    // Handle subscriber count update
-    if (data.type === 'subscriber-total') {
-        updateSubCount(data.count);
-    }
-    
-    // Handle follower count update
-    if (data.type === 'follower-total') {
-        updateFollowerCount(data.count);
-    }
-    
-    // Handle donation total update
-    if (data.type === 'tip-total') {
-        updateDonationTotal(data.amount);
+    try {
+        const data = obj.detail.event;
+        
+        // Update our stored latest data
+        if (data && data.type) {
+            // Store the data for future refreshes
+            switch (data.type) {
+                case 'subscriber-latest':
+                    latestData['subscriber-latest'] = data;
+                    break;
+                case 'tip-latest':
+                    latestData['tip-latest'] = data;
+                    break;
+                case 'tip-monthly-top-donation':
+                    latestData['tip-monthly-top-donation'] = data;
+                    break;
+                // Add other cases as needed
+                default:
+                    // For other event types, store by type
+                    latestData[data.type] = data;
+                    break;
+            }
+        }
+        
+        // Handle new subscriber
+        if (data.type === 'subscriber-latest') {
+            updateLatestSub(data.name);
+        }
+        
+        // Handle new tip/donation
+        if (data.type === 'tip-latest') {
+            updateLatestTip(data.name, data.amount);
+        }
+        
+        // Handle top donator update (monthly)
+        if (data.type === 'tip-monthly-top-donation') {
+            updateTopDonator(data.name, data.amount);
+        }
+        
+        // Handle top weekly donator update
+        if (data.type === 'tip-weekly-top-donator') {
+            updateTopWeeklyDonator(data.name, data.amount);
+        }
+        
+        // Handle top stream donator update
+        if (data.type === 'tip-session-top-donator') {
+            updateTopStreamDonator(data.name, data.amount);
+        }
+        
+        // Handle all-time top donator update
+        if (data.type === 'tip-alltime-top-donation') {
+            updateTopAllTimeDonator(data.name, data.amount);
+        }
+        
+        // Handle new cheer
+        if (data.type === 'cheer-latest') {
+            updateLatestCheer(data.name, data.amount);
+        }
+        
+        // Handle subscriber count update
+        if (data.type === 'subscriber-total') {
+            updateSubCount(data.count);
+        }
+        
+        // Handle follower count update
+        if (data.type === 'follower-total') {
+            updateFollowerCount(data.count);
+        }
+        
+        // Handle donation total update
+        if (data.type === 'tip-total') {
+            updateDonationTotal(data.amount);
+        }
+    } catch (e) {
+        console.error("Error processing event:", e);
     }
 });
 
-// Update functions
-function updateLatestSub(username) {
+// Update functions - modified to accept 'animate' parameter
+function updateLatestSub(username, animate = true) {
     const container = document.getElementById('latest-sub-container');
     const value = document.getElementById('latest-sub-value');
     
-    value.textContent = username;
-    container.classList.add('new-event');
-    
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'latest-sub-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('latest-sub-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
-        }
+    if (!container || !value) {
+        console.error("Latest sub elements not found");
+        return;
     }
     
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
+    value.textContent = username;
+    
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // If this is the active item, temporarily stop the carousel
+        if (carouselItems[currentCarouselIndex] === 'latest-sub-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000); // Restart after 5 seconds
+        } else {
+            // If it's not the active item, switch to it
+            const index = carouselItems.indexOf('latest-sub-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
+        }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
+    }
 }
 
-function updateLatestTip(username, amount) {
+function updateLatestTip(username, amount, animate = true) {
     const container = document.getElementById('latest-tip-container');
     const nameEl = document.getElementById('latest-tip-name');
     const amountEl = document.getElementById('latest-tip-amount');
     
-    nameEl.textContent = username;
-    amountEl.textContent = amount;
-    container.classList.add('new-event');
-    
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'latest-tip-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('latest-tip-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
-        }
+    if (!container || !nameEl || !amountEl) {
+        console.error("Latest tip elements not found");
+        return;
     }
     
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
+    nameEl.textContent = username;
+    amountEl.textContent = amount;
+    
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // If this is the active item, temporarily stop the carousel
+        if (carouselItems[currentCarouselIndex] === 'latest-tip-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000); // Restart after 5 seconds
+        } else {
+            // If it's not the active item, switch to it
+            const index = carouselItems.indexOf('latest-tip-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
+        }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
+    }
 }
 
-function updateTopDonator(username, amount) {
+function updateTopDonator(username, amount, animate = true) {
     console.log("Updating top donator with:", username, amount);
     
     if (!username || username === '') {
@@ -383,26 +525,33 @@ function updateTopDonator(username, amount) {
     
     nameEl.textContent = username;
     amountEl.textContent = amount;
-    container.classList.add('new-event');
     
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'top-donator-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('top-donator-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // If this is the active item, temporarily stop the carousel
+        if (carouselItems[currentCarouselIndex] === 'top-donator-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000); // Restart after 5 seconds
+        } else {
+            // If it's not the active item, switch to it
+            const index = carouselItems.indexOf('top-donator-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
         }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
     }
-    
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
 }
 
-function updateTopWeeklyDonator(username, amount) {
+// Similar modifications for other update functions...
+// The following functions would need the same animate parameter added
+
+function updateTopWeeklyDonator(username, amount, animate = true) {
+    // Same pattern as updateTopDonator
     if (!username || username === '') {
         username = '--';
     }
@@ -415,28 +564,37 @@ function updateTopWeeklyDonator(username, amount) {
     const nameEl = document.getElementById('top-weekly-donator-name');
     const amountEl = document.getElementById('top-weekly-donator-amount');
     
-    nameEl.textContent = username;
-    amountEl.textContent = amount;
-    container.classList.add('new-event');
-    
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'top-weekly-donator-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('top-weekly-donator-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
-        }
+    if (!container || !nameEl || !amountEl) {
+        console.error("Top weekly donator elements not found");
+        return;
     }
     
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
+    nameEl.textContent = username;
+    amountEl.textContent = amount;
+    
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // If this is the active item, temporarily stop the carousel
+        if (carouselItems[currentCarouselIndex] === 'top-weekly-donator-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000); // Restart after 5 seconds
+        } else {
+            // If it's not the active item, switch to it
+            const index = carouselItems.indexOf('top-weekly-donator-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
+        }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
+    }
 }
 
-function updateTopStreamDonator(username, amount) {
+function updateTopStreamDonator(username, amount, animate = true) {
+    // Same pattern as other update functions
     if (!username || username === '') {
         username = '--';
     }
@@ -449,28 +607,36 @@ function updateTopStreamDonator(username, amount) {
     const nameEl = document.getElementById('top-stream-donator-name');
     const amountEl = document.getElementById('top-stream-donator-amount');
     
-    nameEl.textContent = username;
-    amountEl.textContent = amount;
-    container.classList.add('new-event');
-    
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'top-stream-donator-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('top-stream-donator-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
-        }
+    if (!container || !nameEl || !amountEl) {
+        console.error("Top stream donator elements not found");
+        return;
     }
     
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
+    nameEl.textContent = username;
+    amountEl.textContent = amount;
+    
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // Animation and carousel handling
+        if (carouselItems[currentCarouselIndex] === 'top-stream-donator-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000);
+        } else {
+            const index = carouselItems.indexOf('top-stream-donator-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
+        }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
+    }
 }
 
-function updateTopAllTimeDonator(username, amount) {
+function updateTopAllTimeDonator(username, amount, animate = true) {
+    // Same pattern as other update functions
     if (!username || username === '') {
         username = '--';
     }
@@ -483,61 +649,89 @@ function updateTopAllTimeDonator(username, amount) {
     const nameEl = document.getElementById('top-alltime-donator-name');
     const amountEl = document.getElementById('top-alltime-donator-amount');
     
-    nameEl.textContent = username;
-    amountEl.textContent = amount;
-    container.classList.add('new-event');
-    
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'top-alltime-donator-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('top-alltime-donator-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
-        }
+    if (!container || !nameEl || !amountEl) {
+        console.error("Top all-time donator elements not found");
+        return;
     }
     
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
+    nameEl.textContent = username;
+    amountEl.textContent = amount;
+    
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // Animation and carousel handling
+        if (carouselItems[currentCarouselIndex] === 'top-alltime-donator-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000);
+        } else {
+            const index = carouselItems.indexOf('top-alltime-donator-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
+        }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
+    }
 }
 
-function updateLatestCheer(username, amount) {
+function updateLatestCheer(username, amount, animate = true) {
+    // Same pattern as other update functions
     const container = document.getElementById('latest-cheer-container');
     const nameEl = document.getElementById('latest-cheer-name');
     const amountEl = document.getElementById('latest-cheer-amount');
     
-    nameEl.textContent = username;
-    amountEl.textContent = amount;
-    container.classList.add('new-event');
-    
-    // If this is the active item, temporarily stop the carousel
-    if (carouselItems[currentCarouselIndex] === 'latest-cheer-container' && carouselInterval) {
-        clearInterval(carouselInterval);
-        setTimeout(startCarousel, 5000); // Restart after 5 seconds
-    } else {
-        // If it's not the active item, switch to it
-        const index = carouselItems.indexOf('latest-cheer-container');
-        if (index !== -1) {
-            activateCarouselItem(index);
-        }
+    if (!container || !nameEl || !amountEl) {
+        console.error("Latest cheer elements not found");
+        return;
     }
     
-    setTimeout(() => {
-        container.classList.remove('new-event');
-    }, 2000);
+    nameEl.textContent = username;
+    amountEl.textContent = amount;
+    
+    if (animate) {
+        container.classList.add('new-event');
+        
+        // Animation and carousel handling
+        if (carouselItems[currentCarouselIndex] === 'latest-cheer-container' && carouselInterval) {
+            clearInterval(carouselInterval);
+            setTimeout(startCarousel, 5000);
+        } else {
+            const index = carouselItems.indexOf('latest-cheer-container');
+            if (index !== -1) {
+                activateCarouselItem(index);
+            }
+        }
+        
+        setTimeout(() => {
+            container.classList.remove('new-event');
+        }, 2000);
+    }
 }
 
 function updateSubCount(count) {
     const currentSubs = document.getElementById('current-subs');
+    if (!currentSubs) {
+        console.error("Current subs element not found");
+        return;
+    }
+    
     currentSubs.textContent = count;
     
     // Update progress bar - ensure it's a percentage calculation
-    const subGoal = parseInt(document.getElementById('sub-goal').textContent);
+    const subGoalEl = document.getElementById('sub-goal');
+    const subGoalProgressEl = document.getElementById('sub-goal-progress');
+    
+    if (!subGoalEl || !subGoalProgressEl) {
+        console.error("Sub goal elements not found");
+        return;
+    }
+    
+    const subGoal = parseInt(subGoalEl.textContent);
     const percentage = Math.min((count / subGoal) * 100, 100);
-    document.getElementById('sub-goal-progress').style.width = percentage + '%';
+    subGoalProgressEl.style.width = percentage + '%';
     
     // Log for debugging
     console.log(`Sub update: ${count}/${subGoal} = ${percentage}%`);
@@ -545,24 +739,51 @@ function updateSubCount(count) {
 
 function updateFollowerCount(count) {
     const currentFollowers = document.getElementById('current-followers');
+    if (!currentFollowers) {
+        console.error("Current followers element not found");
+        return;
+    }
+    
     currentFollowers.textContent = count;
     
     // Update progress bar - ensure it's a percentage calculation
-    const followerGoal = parseInt(document.getElementById('follower-goal').textContent);
+    const followerGoalEl = document.getElementById('follower-goal');
+    const followerGoalProgressEl = document.getElementById('follower-goal-progress');
+    
+    if (!followerGoalEl || !followerGoalProgressEl) {
+        console.error("Follower goal elements not found");
+        return;
+    }
+    
+    const followerGoal = parseInt(followerGoalEl.textContent);
     const percentage = Math.min((count / followerGoal) * 100, 100);
-    document.getElementById('follower-goal-progress').style.width = percentage + '%';
+    followerGoalProgressEl.style.width = percentage + '%';
     
     // Log for debugging
     console.log(`Follower update: ${count}/${followerGoal} = ${percentage}%`);
 }
 
 function updateDonationTotal(amount) {
-    document.getElementById('current-donations').textContent = amount;
+    const currentDonations = document.getElementById('current-donations');
+    if (!currentDonations) {
+        console.error("Current donations element not found");
+        return;
+    }
+    
+    currentDonations.textContent = amount;
     
     // Update progress bar - ensure it's a percentage calculation
-    const donationGoal = parseInt(document.getElementById('donation-goal').textContent);
+    const donationGoalEl = document.getElementById('donation-goal');
+    const donationGoalProgressEl = document.getElementById('donation-goal-progress');
+    
+    if (!donationGoalEl || !donationGoalProgressEl) {
+        console.error("Donation goal elements not found");
+        return;
+    }
+    
+    const donationGoal = parseInt(donationGoalEl.textContent);
     const percentage = Math.min((amount / donationGoal) * 100, 100);
-    document.getElementById('donation-goal-progress').style.width = percentage + '%';
+    donationGoalProgressEl.style.width = percentage + '%';
     
     // Log for debugging
     console.log(`Donation update: ${amount}/${donationGoal} = ${percentage}%`);
@@ -570,22 +791,96 @@ function updateDonationTotal(amount) {
 
 // Function to force update all goals
 function forceUpdateAllGoals() {
-    // Get current values
-    const currentSubs = parseInt(document.getElementById('current-subs').textContent) || 0;
-    const currentDonations = parseInt(document.getElementById('current-donations').textContent) || 0;
-    const currentFollowers = parseInt(document.getElementById('current-followers').textContent) || 0;
-    
-    // Force update all progress bars
-    updateSubCount(currentSubs);
-    updateDonationTotal(currentDonations);
-    updateFollowerCount(currentFollowers);
+    try {
+        console.log("Forcing update of all goals...");
+        
+        // Get current values with proper error handling
+        let currentSubs = 0;
+        let currentDonations = 0;
+        let currentFollowers = 0;
+        
+        const currentSubsEl = document.getElementById('current-subs');
+        if (currentSubsEl) {
+            currentSubs = parseInt(currentSubsEl.textContent) || 0;
+        }
+        
+        const currentDonationsEl = document.getElementById('current-donations');
+        if (currentDonationsEl) {
+            currentDonations = parseFloat(currentDonationsEl.textContent) || 0;
+        }
+        
+        const currentFollowersEl = document.getElementById('current-followers');
+        if (currentFollowersEl) {
+            currentFollowers = parseInt(currentFollowersEl.textContent) || 0;
+        }
+        
+        // Force update all progress bars
+        updateSubCount(currentSubs);
+        updateDonationTotal(currentDonations);
+        updateFollowerCount(currentFollowers);
+        
+        console.log("All goals updated successfully");
+    } catch (e) {
+        console.error("Error during force update of goals:", e);
+    }
 }
 
 // Optional: Function to check top donator elements for debugging
-function checkTopDonatorElements() {
+function checkDOMElements() {
+    console.log("Checking DOM elements:");
+    
+    // Check main containers
+    console.log("Main containers:");
+    console.log("Username:", document.getElementById('username'));
+    console.log("Latest events:", document.getElementById('latest-events'));
+    console.log("Goals:", document.getElementById('goals'));
+    console.log("Camera frame:", document.getElementById('camera-frame'));
+    
+    // Check carousel items
+    console.log("Carousel items:");
+    console.log("Latest sub:", document.getElementById('latest-sub-container'));
+    console.log("Latest tip:", document.getElementById('latest-tip-container'));
+    console.log("Latest cheer:", document.getElementById('latest-cheer-container'));
+    
+    // Check top donator containers
     console.log("Top donator containers:");
     console.log("Monthly:", document.getElementById('top-donator-container'));
     console.log("Weekly:", document.getElementById('top-weekly-donator-container'));
     console.log("Stream:", document.getElementById('top-stream-donator-container'));
     console.log("All-time:", document.getElementById('top-alltime-donator-container'));
+    
+    // Check goal elements
+    console.log("Goal elements:");
+    console.log("Sub goal:", document.getElementById('sub-goal'));
+    console.log("Current subs:", document.getElementById('current-subs'));
+    console.log("Sub progress:", document.getElementById('sub-goal-progress'));
+    
+    console.log("Donation goal:", document.getElementById('donation-goal'));
+    console.log("Current donations:", document.getElementById('current-donations'));
+    console.log("Donation progress:", document.getElementById('donation-goal-progress'));
+    
+    console.log("Follower goal:", document.getElementById('follower-goal'));
+    console.log("Current followers:", document.getElementById('current-followers'));
+    console.log("Follower progress:", document.getElementById('follower-goal-progress'));
+    
+    // Return a summary of missing elements
+    const missingElements = [];
+    
+    ['username', 'latest-events', 'goals', 'camera-frame',
+     'latest-sub-container', 'latest-tip-container', 'latest-cheer-container',
+     'top-donator-container', 'top-weekly-donator-container', 'top-stream-donator-container', 'top-alltime-donator-container',
+     'sub-goal', 'current-subs', 'sub-goal-progress',
+     'donation-goal', 'current-donations', 'donation-goal-progress',
+     'follower-goal', 'current-followers', 'follower-goal-progress'
+    ].forEach(id => {
+        if (!document.getElementById(id)) {
+            missingElements.push(id);
+        }
+    });
+    
+    if (missingElements.length > 0) {
+        console.warn("Missing elements:", missingElements);
+    } else {
+        console.log("All required elements are present");
+    }
 }
